@@ -321,6 +321,10 @@
 
 <!-- ===== QR PANEL ===== -->
 <div class="panel" id="panel-qr">
+  <div class="preview-lang-toggle">
+    <button class="lang-btn active" id="qrLangKr">국문</button>
+    <button class="lang-btn" id="qrLangEn">영문</button>
+  </div>
   <div class="qr-container" id="qrContainer">
     <div class="qr-empty-state">
       <div class="icon">📇</div>
@@ -363,6 +367,7 @@
 const QR_API = "https://api.qrserver.com/v1/create-qr-code/";
 const FIELDS = ["lastName","firstName","lastNameEn","firstNameEn","position","titleKr","titleEn","dept","deptEn","tel","mobile","email","website","addressKr","addressEn"];
 let currentLang = "kr";
+let qrLang = "kr";
 let currentTab = "edit";
 
 const SAMPLE = {
@@ -387,14 +392,14 @@ function isValid() {
   return !!(d.firstName && d.lastName && (d.mobile || d.email));
 }
 
-function generateVCard(d) {
+function generateVCardKr(d) {
   if (!d) d = getForm();
   return [
     "BEGIN:VCARD","VERSION:3.0",
     "N:"+d.lastName+";"+d.firstName+";;;",
-    "FN:"+d.firstName+" "+d.lastName,
+    "FN:"+d.lastName+d.firstName,
     "ORG:"+d.companyKr,
-    "TITLE:"+d.titleKr,
+    d.titleKr?"TITLE:"+d.titleKr:"",
     d.dept?"X-DEPARTMENT:"+d.dept:"",
     d.tel?"TEL;TYPE=WORK:"+d.tel:"",
     d.mobile?"TEL;TYPE=CELL:"+d.mobile:"",
@@ -403,6 +408,28 @@ function generateVCard(d) {
     d.addressKr?"ADR;TYPE=WORK:;;"+d.addressKr+";;;;":"",
     "END:VCARD"
   ].filter(Boolean).join("\n");
+}
+
+function generateVCardEn(d) {
+  if (!d) d = getForm();
+  return [
+    "BEGIN:VCARD","VERSION:3.0",
+    "N:"+(d.lastNameEn||d.lastName)+";"+(d.firstNameEn||d.firstName)+";;;",
+    "FN:"+(d.firstNameEn||d.firstName)+" "+(d.lastNameEn||d.lastName),
+    "ORG:"+(d.companyEn||d.companyKr),
+    d.titleEn?"TITLE:"+d.titleEn:(d.titleKr?"TITLE:"+d.titleKr:""),
+    d.deptEn?"X-DEPARTMENT:"+d.deptEn:(d.dept?"X-DEPARTMENT:"+d.dept:""),
+    d.tel?"TEL;TYPE=WORK:"+d.tel:"",
+    d.mobile?"TEL;TYPE=CELL:"+d.mobile:"",
+    d.email?"EMAIL:"+d.email:"",
+    d.website?"URL:https://"+d.website:"",
+    d.addressEn?"ADR;TYPE=WORK:;;"+d.addressEn+";;;;":(d.addressKr?"ADR;TYPE=WORK:;;"+d.addressKr+";;;;":""),
+    "END:VCARD"
+  ].filter(Boolean).join("\n");
+}
+
+function generateVCard(d) {
+  return qrLang === "en" ? generateVCardEn(d) : generateVCardKr(d);
 }
 
 function downloadVCard() {
@@ -439,26 +466,38 @@ function toggleGroup(header) {
 
 /* ── QR update ── */
 function updateQR() {
-  const container = document.getElementById("qrContainer");
-  const valid = isValid();
+  var container = document.getElementById("qrContainer");
+  var valid = isValid();
 
   if (!valid) {
     container.innerHTML = '<div class="qr-empty-state"><div class="icon">📇</div><p>입력 탭에서 명함 정보를<br>먼저 입력해 주세요.</p></div>';
     return;
   }
 
-  const d = getForm();
-  const qrUrl = QR_API+"?size=400x400&data="+encodeURIComponent(generateVCard(d))+"&color=1a2e78&bgcolor=ffffff&format=svg";
+  var d = getForm();
+  var vcard = qrLang === "en" ? generateVCardEn(d) : generateVCardKr(d);
+  var qrUrl = QR_API+"?size=400x400&data="+encodeURIComponent(vcard)+"&color=1a2e78&bgcolor=ffffff&format=svg";
+  var nameDisplay = qrLang === "en" ? ((d.firstNameEn||"")+" "+(d.lastNameEn||"")) : (d.lastName+d.firstName);
+  var metaDisplay = qrLang === "en" ? ((d.titleEn||"")+(d.titleEn&&d.deptEn?" · ":"")+(d.deptEn||"")) : ((d.dept||"")+(d.dept&&d.titleKr?" · ":"")+(d.titleKr||""));
+  var langLabel = qrLang === "en" ? "영문 vCard" : "국문 vCard";
 
   container.innerHTML =
     '<div class="qr-card">' +
       '<img src="'+qrUrl+'" width="220" height="220" alt="QR">' +
-      '<p class="qr-name">'+d.lastName+d.firstName+'</p>' +
-      '<p class="qr-meta">'+(d.dept||"")+(d.dept&&d.titleKr?" · ":"")+d.titleKr+'</p>' +
+      '<p class="qr-name">'+nameDisplay+'</p>' +
+      '<p class="qr-meta">'+metaDisplay+'</p>' +
+      '<p style="margin-top:8px;font-size:11px;color:var(--navy);font-weight:600;">'+langLabel+'</p>' +
     '</div>' +
     '<div class="qr-hint">스마트폰 카메라로 QR코드를 스캔하면<br>연락처가 바로 저장됩니다.</div>' +
     '<button id="btnQrVcard" style="margin-top:16px;padding:10px 20px;background:none;border:1px solid #ccc;border-radius:8px;font-size:12px;color:#888;cursor:pointer;font-family:inherit;">vCard 파일 직접 다운로드</button>';
   document.getElementById("btnQrVcard").addEventListener("click", downloadVCard);
+}
+
+function setQrLang(lang) {
+  qrLang = lang;
+  document.getElementById("qrLangKr").classList.toggle("active", lang==="kr");
+  document.getElementById("qrLangEn").classList.toggle("active", lang==="en");
+  updateQR();
 }
 
 /* ── Preview update ── */
@@ -606,6 +645,8 @@ document.getElementById("btnSample").addEventListener("click", loadSample);
 document.getElementById("btnReset").addEventListener("click", resetForm);
 document.getElementById("langKr").addEventListener("click", function(){ setLang("kr"); });
 document.getElementById("langEn").addEventListener("click", function(){ setLang("en"); });
+document.getElementById("qrLangKr").addEventListener("click", function(){ setQrLang("kr"); });
+document.getElementById("qrLangEn").addEventListener("click", function(){ setQrLang("en"); });
 
 // Collapsible field groups (event delegation)
 document.querySelectorAll(".field-group-header").forEach(function(header) {
