@@ -281,7 +281,7 @@
     </div>
     <div class="field-group-divider"></div>
     <div class="field-grid">
-      <div class="field"><label>직책</label><input id="position" placeholder="팀장, 부장 등"></div>
+      <div class="field"><label>직책</label><input id="position" placeholder="팀장 등"></div>
       <div class="field"></div>
       <div class="field"><label>직함 (한)</label><input id="titleKr" placeholder="Performance Manager"></div>
       <div class="field"><label>직함 (영)</label><input id="titleEn" placeholder="Performance Manager"></div>
@@ -472,7 +472,7 @@ function updatePreview() {
   const kr = currentLang === "kr";
   const nameEl = document.getElementById("cardName");
   if (kr) {
-    nameEl.textContent = d.lastName+" "+d.firstName;
+    nameEl.textContent = d.lastName+d.firstName;
   } else {
     nameEl.textContent = d.firstNameEn+" "+d.lastNameEn;
   }
