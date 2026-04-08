@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-title" content="효성 명함 생성기">
 <title>효성티앤씨 QR코드 명함 생성기</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root {
     --navy: #1a2e78;
@@ -433,14 +434,74 @@ function generateVCard(d) {
 }
 
 function downloadVCard() {
-  const d = getForm();
-  const blob = new Blob([generateVCard(d)], {type:"text/vcard;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = (d.lastNameEn||d.lastName)+"_"+(d.firstNameEn||d.firstName)+".vcf";
-  a.click();
-  URL.revokeObjectURL(url);
+  var d = getForm();
+  var downloadLang = qrLang;
+
+  // Temporarily show and render card for capture
+  var previewPanel = document.getElementById("panel-preview");
+  var previewContent = document.getElementById("previewContent");
+  var previewEmpty = document.getElementById("previewEmpty");
+  var card = document.getElementById("cardReplica");
+
+  // Save current state
+  var prevLang = currentLang;
+  var prevPanelDisplay = previewPanel.style.display;
+  var prevContentDisplay = previewContent.style.display;
+
+  // Temporarily make card visible for capture
+  currentLang = downloadLang;
+  updatePreview();
+  previewPanel.style.display = "block";
+  previewPanel.style.position = "fixed";
+  previewPanel.style.left = "-9999px";
+  previewContent.style.display = "block";
+
+  html2canvas(card, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(function(canvas) {
+    // Get base64 JPEG (strip data:image/jpeg;base64, prefix)
+    var dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    var b64 = dataUrl.split(",")[1];
+
+    // Generate vCard with PHOTO
+    var vcard = downloadLang === "en" ? generateVCardEn(d) : generateVCardKr(d);
+    // Insert PHOTO before END:VCARD
+    vcard = vcard.replace("END:VCARD", "PHOTO;ENCODING=b;TYPE=JPEG:" + b64 + "\nEND:VCARD");
+
+    var blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = (d.lastNameEn || d.lastName) + "_" + (d.firstNameEn || d.firstName) + ".vcf";
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // Restore state
+    previewPanel.style.display = "";
+    previewPanel.style.position = "";
+    previewPanel.style.left = "";
+    currentLang = prevLang;
+    updatePreview();
+    if (currentTab !== "preview") {
+      previewPanel.classList.remove("active");
+    }
+  }).catch(function() {
+    // Fallback: download without photo
+    var vcard = downloadLang === "en" ? generateVCardEn(d) : generateVCardKr(d);
+    var blob = new Blob([vcard], { type: "text/vcard;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = (d.lastNameEn || d.lastName) + "_" + (d.firstNameEn || d.firstName) + ".vcf";
+    a.click();
+    URL.revokeObjectURL(url);
+
+    previewPanel.style.display = "";
+    previewPanel.style.position = "";
+    previewPanel.style.left = "";
+    currentLang = prevLang;
+    if (currentTab !== "preview") {
+      previewPanel.classList.remove("active");
+    }
+  });
 }
 
 /* ── Tabs ── */
