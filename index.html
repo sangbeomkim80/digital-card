@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="효성 명함 생성기">
 <title>효성티앤씨 QR코드 명함 생성기</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root {
@@ -23,7 +23,7 @@
   }
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    font-family: 'Noto Sans KR', -apple-system, 'Apple SD Gothic Neo', sans-serif;
+    font-family: 'Noto Sans KR', 'Noto Sans SC', -apple-system, 'Apple SD Gothic Neo', sans-serif;
     background: var(--bg); color: var(--text-dark);
     min-height: 100vh; min-height: 100dvh;
     overflow-x: hidden;
@@ -48,6 +48,23 @@
     background: rgba(255,255,255,0.2); transition: all 0.3s;
   }
   .status-dot.active { background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.5); }
+
+  /* ── UI Language Segment Control ── */
+  .ui-lang-group {
+    display: inline-flex; gap: 0; border-radius: 6px;
+    background: rgba(255,255,255,0.08); padding: 2px;
+  }
+  .ui-lang-btn {
+    border: none; background: transparent;
+    color: rgba(255,255,255,0.55);
+    font-family: inherit; font-size: 11px; font-weight: 700;
+    padding: 4px 8px; border-radius: 4px; cursor: pointer;
+    letter-spacing: 0.03em; transition: all 0.15s;
+    min-width: 26px;
+  }
+  .ui-lang-btn.active { background: rgba(255,255,255,0.95); color: var(--navy); }
+  .ui-lang-btn:active { transform: scale(0.95); }
+  .header-right { display: flex; align-items: center; gap: 10px; }
 
   /* ── Tabs ── */
   .tabs {
@@ -103,6 +120,18 @@
   }
   .field-grid.collapsed { max-height: 0; opacity: 0; margin: 0; }
   .field-full { grid-column: 1 / -1; }
+
+  /* ── Field visibility by UI language ── */
+  body[data-ui="ko"] .field-lang-cn { display: none; }
+  body[data-ui="en"] .field-lang-ko,
+  body[data-ui="en"] .field-lang-cn { display: none; }
+  body[data-ui="cn"] .field-lang-ko { display: none; }
+  /* Preview/QR language toggle buttons */
+  body[data-ui="ko"] .lang-btn-cn { display: none; }
+  body[data-ui="en"] .lang-btn-kr,
+  body[data-ui="en"] .lang-btn-cn { display: none; }
+  body[data-ui="cn"] .lang-btn-kr { display: none; }
+  body[data-ui="en"] .preview-lang-toggle { display: none; }
   .field label {
     display: block; font-size: 11px; font-weight: 600;
     color: var(--text-light); margin-bottom: 4px;
@@ -242,78 +271,88 @@
 <!-- Header -->
 <div class="header">
   <div class="header-left">
-    <span style="font-family:'Noto Sans KR',sans-serif;font-weight:800;color:#fff;font-size:16px;">효성티앤씨 QR코드 명함 생성기</span>
+    <span id="appTitle" data-i18n="appTitle" style="font-family:'Noto Sans KR','Noto Sans SC',sans-serif;font-weight:800;color:#fff;font-size:16px;">효성티앤씨 QR코드 명함 생성기</span>
   </div>
-  <div class="status-dot" id="statusDot"></div>
+  <div class="header-right">
+    <div class="ui-lang-group" role="group" aria-label="UI language">
+      <button class="ui-lang-btn active" id="uiLangKo" type="button">KO</button>
+      <button class="ui-lang-btn" id="uiLangEn" type="button">EN</button>
+      <button class="ui-lang-btn" id="uiLangCn" type="button">CN</button>
+    </div>
+    <div class="status-dot" id="statusDot"></div>
+  </div>
 </div>
 
 <!-- Tabs -->
 <div class="tabs">
-  <button class="tab active" id="tabEdit">입력</button>
-  <button class="tab" id="tabQr">QR코드</button>
-  <button class="tab" id="tabPreview">미리보기</button>
+  <button class="tab active" id="tabEdit" data-i18n="tabEdit">입력</button>
+  <button class="tab" id="tabQr" data-i18n="tabQr">QR코드</button>
+  <button class="tab" id="tabPreview" data-i18n="tabPreview">미리보기</button>
 </div>
 
 <!-- ===== EDIT PANEL ===== -->
 <div class="panel active" id="panel-edit">
   <div class="form-actions">
-    <button class="btn-sample" id="btnSample">예시 보기</button>
-    <button class="btn-reset" id="btnReset">초기화</button>
+    <button class="btn-sample" id="btnSample" data-i18n="btnSample">예시 보기</button>
+    <button class="btn-reset" id="btnReset" data-i18n="btnReset">초기화</button>
   </div>
 
   <div class="field-group">
     <div class="field-group-header" >
-      <span class="field-group-title">이름</span>
+      <span class="field-group-title" data-i18n="groupName">이름</span>
       <span class="field-group-toggle">▾</span>
     </div>
     <div class="field-group-divider"></div>
     <div class="field-grid">
-      <div class="field"><label>성 (한) <span class="req">*</span></label><input id="lastName" placeholder="홍" inputmode="text" class="required-field"></div>
-      <div class="field"><label>이름 (한) <span class="req">*</span></label><input id="firstName" placeholder="길동" inputmode="text" class="required-field"></div>
-      <div class="field"><label>성 (영)</label><input id="lastNameEn" placeholder="HONG" inputmode="text"></div>
-      <div class="field"><label>이름 (영)</label><input id="firstNameEn" placeholder="GIL DONG" inputmode="text"></div>
-    </div>
-  </div>
-
-  <div class="field-group">
-    <div class="field-group-header" >
-      <span class="field-group-title">소속</span>
-      <span class="field-group-toggle">▾</span>
-    </div>
-    <div class="field-group-divider"></div>
-    <div class="field-grid">
-      <div class="field"><label>직책</label><input id="position" placeholder="팀장 등"></div>
-      <div class="field"></div>
-      <div class="field"><label>직함 (한)</label><input id="titleKr" placeholder="Performance Manager"></div>
-      <div class="field"><label>직함 (영)</label><input id="titleEn" placeholder="Performance Manager"></div>
-      <div class="field"><label>부서 (한)</label><input id="dept" placeholder="ESG경영팀"></div>
-      <div class="field"><label>부서 (영)</label><input id="deptEn" placeholder="ESG Management Team"></div>
+      <div class="field field-lang-ko"><label><span data-i18n="lastName">성 (한)</span> <span class="req">*</span></label><input id="lastName" placeholder="홍" inputmode="text" class="required-field"></div>
+      <div class="field field-lang-ko"><label><span data-i18n="firstName">이름 (한)</span> <span class="req">*</span></label><input id="firstName" placeholder="길동" inputmode="text" class="required-field"></div>
+      <div class="field field-lang-cn"><label><span data-i18n="lastNameCn">성 (중)</span> <span class="req-cn" style="display:none"> *</span></label><input id="lastNameCn" placeholder="张" inputmode="text"></div>
+      <div class="field field-lang-cn"><label><span data-i18n="firstNameCn">이름 (중)</span> <span class="req-cn" style="display:none"> *</span></label><input id="firstNameCn" placeholder="三" inputmode="text"></div>
+      <div class="field field-lang-en"><label><span data-i18n="lastNameEn">성 (영)</span> <span class="req-en" style="display:none"> *</span></label><input id="lastNameEn" placeholder="Taylor" inputmode="text"></div>
+      <div class="field field-lang-en"><label><span data-i18n="firstNameEn">이름 (영)</span> <span class="req-en" style="display:none"> *</span></label><input id="firstNameEn" placeholder="Alex" inputmode="text"></div>
     </div>
   </div>
 
   <div class="field-group">
     <div class="field-group-header" >
-      <span class="field-group-title">연락처</span>
+      <span class="field-group-title" data-i18n="groupOrg">소속</span>
       <span class="field-group-toggle">▾</span>
     </div>
     <div class="field-group-divider"></div>
     <div class="field-grid">
-      <div class="field"><label>Tel</label><input id="tel" placeholder="02-707-7583" inputmode="tel"></div>
-      <div class="field"><label>Mobile <span class="req">*</span></label><input id="mobile" placeholder="010-1111-2222" inputmode="tel" class="required-field"></div>
-      <div class="field field-full"><label>E-mail <span class="req">*</span></label><input id="email" placeholder="gildong.hong@hyosung.com" inputmode="email" class="required-field"></div>
-      <div class="field field-full"><label>Website</label><input id="website" placeholder="www.hyosungtnc.com" value="www.hyosungtnc.com" inputmode="url"></div>
+      <div class="field field-lang-ko"><label data-i18n="titleKr">직함/직책 (한)</label><input id="titleKr" placeholder="Performance Manager / 팀장"></div>
+      <div class="field field-lang-cn"><label data-i18n="titleCn">직함/직책 (중)</label><input id="titleCn" placeholder="绩效经理 / 部长"></div>
+      <div class="field field-lang-en"><label data-i18n="titleEn">직함/직책 (영)</label><input id="titleEn" placeholder="Performance Manager"></div>
+      <div class="field field-lang-ko"><label data-i18n="dept">부서 (한)</label><input id="dept" placeholder="ESG경영팀"></div>
+      <div class="field field-lang-cn"><label data-i18n="deptCn">부서 (중)</label><input id="deptCn" placeholder="ESG经营团队"></div>
+      <div class="field field-lang-en"><label data-i18n="deptEn">부서 (영)</label><input id="deptEn" placeholder="ESG Management Team"></div>
     </div>
   </div>
 
   <div class="field-group">
     <div class="field-group-header" >
-      <span class="field-group-title">주소</span>
+      <span class="field-group-title" data-i18n="groupContact">연락처</span>
       <span class="field-group-toggle">▾</span>
     </div>
     <div class="field-group-divider"></div>
     <div class="field-grid">
-      <div class="field field-full"><label>주소 (한)</label><input id="addressKr" placeholder="04144 서울특별시 마포구 마포대로 119 (공덕동)"></div>
-      <div class="field field-full"><label>주소 (영)</label><input id="addressEn" placeholder="119, Mapo-daero, Mapo-gu, Seoul, Korea 04144"></div>
+      <div class="field"><label data-i18n="tel">Tel</label><input id="tel" placeholder="02-707-7583" data-i18n-ph="phoneHintTel" inputmode="tel"></div>
+      <div class="field"><label><span data-i18n="mobile">Mobile</span> <span class="req">*</span></label><input id="mobile" placeholder="010-1111-2222" data-i18n-ph="phoneHintMobile" inputmode="tel" class="required-field"></div>
+      <div class="field field-full"><label><span data-i18n="email">E-mail</span> <span class="req">*</span></label><input id="email" placeholder="sample.user@hyosung.com" inputmode="email" class="required-field"></div>
+      <div class="field field-full"><label data-i18n="website">Website</label><input id="website" placeholder="www.hyosungtnc.com" value="www.hyosungtnc.com" inputmode="url"></div>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <div class="field-group-header" >
+      <span class="field-group-title" data-i18n="groupAddr">주소</span>
+      <span class="field-group-toggle">▾</span>
+    </div>
+    <div class="field-group-divider"></div>
+    <div class="field-grid">
+      <div class="field field-full field-lang-ko"><label data-i18n="addressKr">주소 (한)</label><input id="addressKr" placeholder="04144 서울특별시 마포구 마포대로 119 (공덕동)"></div>
+      <div class="field field-full field-lang-cn"><label data-i18n="addressCn">주소 (중)</label><input id="addressCn" placeholder="首尔特别市麻浦区麻浦大路119号 (孔德洞) 邮编04144"></div>
+      <div class="field field-full field-lang-en"><label data-i18n="addressEn">주소 (영)</label><input id="addressEn" placeholder="119, Mapo-daero, Mapo-gu, Seoul, Korea 04144"></div>
     </div>
   </div>
 
@@ -323,13 +362,14 @@
 <!-- ===== QR PANEL ===== -->
 <div class="panel" id="panel-qr">
   <div class="preview-lang-toggle">
-    <button class="lang-btn active" id="qrLangKr">국문</button>
-    <button class="lang-btn" id="qrLangEn">영문</button>
+    <button class="lang-btn active lang-btn-kr" id="qrLangKr" data-i18n="langToggleKr">국문</button>
+    <button class="lang-btn lang-btn-cn" id="qrLangCn" data-i18n="langToggleCn">중문</button>
+    <button class="lang-btn lang-btn-en" id="qrLangEn" data-i18n="langToggleEn">영문</button>
   </div>
   <div class="qr-container" id="qrContainer">
     <div class="qr-empty-state">
       <div class="icon">📇</div>
-      <p>입력 탭에서 명함 정보를 먼저 입력해 주세요.</p>
+      <p data-i18n="emptyState">입력 탭에서 명함 정보를 먼저 입력해 주세요.</p>
     </div>
   </div>
 </div>
@@ -338,8 +378,9 @@
 <div class="panel" id="panel-preview">
   <div id="previewContent">
     <div class="preview-lang-toggle">
-      <button class="lang-btn active" id="langKr">국문</button>
-      <button class="lang-btn" id="langEn">영문</button>
+      <button class="lang-btn active lang-btn-kr" id="langKr" data-i18n="langToggleKr">국문</button>
+      <button class="lang-btn lang-btn-cn" id="langCn" data-i18n="langToggleCn">중문</button>
+      <button class="lang-btn lang-btn-en" id="langEn" data-i18n="langToggleEn">영문</button>
     </div>
     <div class="card-replica" id="cardReplica">
       <div class="card-border-left"></div>
@@ -359,25 +400,141 @@
   </div>
   <div class="preview-empty" id="previewEmpty" style="display:none;">
     <div class="icon">📇</div>
-    <p>입력 탭에서 명함 정보를 먼저 입력해 주세요.</p>
+    <p data-i18n="emptyState">입력 탭에서 명함 정보를 먼저 입력해 주세요.</p>
   </div>
 </div>
 
 
 <script>
 const QR_API = "https://api.qrserver.com/v1/create-qr-code/";
-const FIELDS = ["lastName","firstName","lastNameEn","firstNameEn","position","titleKr","titleEn","dept","deptEn","tel","mobile","email","website","addressKr","addressEn"];
+const FIELDS = ["lastName","firstName","lastNameEn","firstNameEn","lastNameCn","firstNameCn","titleKr","titleEn","titleCn","dept","deptEn","deptCn","tel","mobile","email","website","addressKr","addressEn","addressCn"];
 let currentLang = "kr";
 let qrLang = "kr";
 let currentTab = "edit";
+let uiLang = "ko";
+
+/* ── I18N resources (UI labels only — card content data is NOT translated) ── */
+const I18N = {
+  ko: {
+    appTitle: "효성티앤씨 QR코드 명함 생성기",
+    tabEdit: "입력", tabQr: "QR코드", tabPreview: "미리보기",
+    btnSample: "예시 보기", btnReset: "초기화",
+    groupName: "이름", groupOrg: "소속", groupContact: "연락처", groupAddr: "주소",
+    lastName: "성 (한)", firstName: "이름 (한)",
+    lastNameEn: "성 (영)", firstNameEn: "이름 (영)",
+    lastNameCn: "성 (중)", firstNameCn: "이름 (중)",
+    titleKr: "직함/직책 (한)", titleEn: "직함/직책 (영)", titleCn: "직함/직책 (중)",
+    dept: "부서 (한)", deptEn: "부서 (영)", deptCn: "부서 (중)",
+    tel: "Tel", mobile: "Mobile", email: "E-mail", website: "Website",
+    addressKr: "주소 (한)", addressEn: "주소 (영)", addressCn: "주소 (중)",
+    langToggleKr: "국문", langToggleEn: "영문", langToggleCn: "중문",
+    vcardLabelKr: "국문 vCard", vcardLabelEn: "영문 vCard", vcardLabelCn: "중문 vCard",
+    emptyState: "입력 탭에서 명함 정보를 먼저 입력해 주세요.",
+    emptyStateShort: "입력 탭에서 명함 정보를<br>먼저 입력해 주세요.",
+    qrHint: "스마트폰 카메라로 QR코드를 스캔하면<br>연락처가 바로 저장됩니다.",
+    btnDownloadVcard: "vCard 파일 직접 다운로드",
+    confirmReset: "입력한 명함 정보가 모두 삭제됩니다. 초기화하시겠습니까?",
+    phoneHintTel: "02-707-7583",
+    phoneHintMobile: "010-1111-2222"
+  },
+  en: {
+    appTitle: "Hyosung TNC QR Business Card Generator",
+    tabEdit: "Edit", tabQr: "QR Code", tabPreview: "Preview",
+    btnSample: "Load Sample", btnReset: "Reset",
+    groupName: "Name", groupOrg: "Organization", groupContact: "Contact", groupAddr: "Address",
+    lastName: "Last Name (Korean)", firstName: "First Name (Korean)",
+    lastNameEn: "Last Name", firstNameEn: "First Name",
+    lastNameCn: "Last Name (Chinese)", firstNameCn: "First Name (Chinese)",
+    titleKr: "Title (Korean)", titleEn: "Title", titleCn: "Title (Chinese)",
+    dept: "Department (Korean)", deptEn: "Department", deptCn: "Department (Chinese)",
+    tel: "Tel", mobile: "Mobile", email: "E-mail", website: "Website",
+    addressKr: "Address (Korean)", addressEn: "Address", addressCn: "Address (Chinese)",
+    langToggleKr: "Korean", langToggleEn: "English", langToggleCn: "Chinese",
+    vcardLabelKr: "Korean vCard", vcardLabelEn: "English vCard", vcardLabelCn: "Chinese vCard",
+    emptyState: "Please enter card information in the Edit tab first.",
+    emptyStateShort: "Please enter card information<br>in the Edit tab first.",
+    qrHint: "Scan the QR code with your smartphone camera<br>to save the contact instantly.",
+    btnDownloadVcard: "Download vCard file",
+    confirmReset: "All entered information will be deleted. Reset?",
+    phoneHintTel: "+1 212-555-0123",
+    phoneHintMobile: "+1 650-555-0123"
+  },
+  cn: {
+    appTitle: "HYOSUNG TNC 二维码名片生成器",
+    tabEdit: "输入", tabQr: "二维码", tabPreview: "预览",
+    btnSample: "查看示例", btnReset: "重置",
+    groupName: "姓名", groupOrg: "所属", groupContact: "联系方式", groupAddr: "地址",
+    lastName: "姓 (韩文)", firstName: "名 (韩文)",
+    lastNameEn: "姓 (英文)", firstNameEn: "名 (英文)",
+    lastNameCn: "姓 (中文)", firstNameCn: "名 (中文)",
+    titleKr: "职称/职务 (韩文)", titleEn: "职称/职务 (英文)", titleCn: "职称/职务 (中文)",
+    dept: "部门 (韩文)", deptEn: "部门 (英文)", deptCn: "部门 (中文)",
+    tel: "座机", mobile: "手机", email: "邮箱", website: "网站",
+    addressKr: "地址 (韩文)", addressEn: "地址 (英文)", addressCn: "地址 (中文)",
+    langToggleKr: "韩文", langToggleEn: "英文", langToggleCn: "中文",
+    vcardLabelKr: "韩文 vCard", vcardLabelEn: "英文 vCard", vcardLabelCn: "中文 vCard",
+    emptyState: "请先在「输入」页填写名片信息。",
+    emptyStateShort: "请先在「输入」页<br>填写名片信息。",
+    qrHint: "用手机摄像头扫描二维码，<br>联系人将自动保存。",
+    btnDownloadVcard: "直接下载 vCard 文件",
+    confirmReset: "已输入的名片信息将全部删除，确认重置吗？",
+    phoneHintTel: "+86 21-1234-5678",
+    phoneHintMobile: "+86 138-1234-5678"
+  }
+};
+
+function t(key) {
+  return (I18N[uiLang] && I18N[uiLang][key]) || I18N.ko[key] || "";
+}
+
+function applyI18n() {
+  document.querySelectorAll("[data-i18n]").forEach(function(el) {
+    var key = el.getAttribute("data-i18n");
+    var val = t(key);
+    if (key === "emptyState" || key === "emptyStateShort" || key === "qrHint") {
+      el.innerHTML = val;
+    } else {
+      el.textContent = val;
+    }
+  });
+  // Dynamic placeholder for phone fields (UI-language aware)
+  document.querySelectorAll("[data-i18n-ph]").forEach(function(el) {
+    var key = el.getAttribute("data-i18n-ph");
+    el.setAttribute("placeholder", t(key));
+  });
+  document.documentElement.lang = (uiLang === "cn") ? "zh-CN" : uiLang;
+  var titleMap = { ko: "효성티앤씨 QR코드 명함 생성기", en: "Hyosung TNC QR Business Card Generator", cn: "HYOSUNG TNC 二维码名片生成器" };
+  document.title = titleMap[uiLang] || titleMap.ko;
+}
+
+function setUiLang(lang) {
+  uiLang = lang;
+  document.getElementById("uiLangKo").classList.toggle("active", lang === "ko");
+  document.getElementById("uiLangEn").classList.toggle("active", lang === "en");
+  document.getElementById("uiLangCn").classList.toggle("active", lang === "cn");
+  document.body.setAttribute("data-ui", lang);
+
+  // Auto-switch preview/QR language to match UI language default
+  var defaultCardLang = (lang === "en") ? "en" : (lang === "cn" ? "cn" : "kr");
+  currentLang = defaultCardLang;
+  qrLang = defaultCardLang;
+  setLang(defaultCardLang);
+  setQrLang(defaultCardLang);
+
+  applyI18n();
+  updateAll();
+}
 
 const SAMPLE = {
-  lastName:"홍", firstName:"길동", lastNameEn:"HONG", firstNameEn:"GIL DONG",
-  position:"팀장", titleKr:"Performance Manager", titleEn:"Performance Manager", dept:"ESG경영팀", deptEn:"ESG Management Team",
+  lastName:"홍", firstName:"길동", lastNameEn:"Taylor", firstNameEn:"Alex",
+  lastNameCn:"张", firstNameCn:"三",
+  titleKr:"Performance Manager", titleEn:"Performance Manager", titleCn:"绩效经理",
+  dept:"ESG경영팀", deptEn:"ESG Management Team", deptCn:"ESG经营团队",
   tel:"02-707-7583", mobile:"010-1111-2222",
-  email:"gildong.hong@hyosung.com", website:"www.hyosungtnc.com",
+  email:"sample.user@hyosung.com", website:"www.hyosungtnc.com",
   addressKr:"04144 서울특별시 마포구 마포대로 119 (공덕동)",
   addressEn:"119, Mapo-daero, Mapo-gu, Seoul, Korea 04144",
+  addressCn:"首尔特别市麻浦区麻浦大路119号 (孔德洞) 邮编04144",
 };
 
 function getForm() {
@@ -385,12 +542,21 @@ function getForm() {
   FIELDS.forEach(k => d[k] = document.getElementById(k).value.trim());
   d.companyKr = "효성티앤씨(주)";
   d.companyEn = "HYOSUNG TNC CORPORATION";
+  d.companyCn = "HYOSUNG TNC";
   return d;
 }
 
 function isValid() {
   const d = getForm();
-  return !!(d.firstName && d.lastName && (d.mobile || d.email));
+  const hasContact = !!(d.mobile || d.email);
+  if (!hasContact) return false;
+  if (uiLang === "cn") {
+    return !!(d.lastNameCn && d.firstNameCn);
+  }
+  if (uiLang === "en") {
+    return !!(d.lastNameEn && d.firstNameEn);
+  }
+  return !!(d.lastName && d.firstName);
 }
 
 function generateVCardKr(d) {
@@ -429,8 +595,28 @@ function generateVCardEn(d) {
   ].filter(Boolean).join("\n");
 }
 
+function generateVCardCn(d) {
+  if (!d) d = getForm();
+  return [
+    "BEGIN:VCARD","VERSION:3.0",
+    "N:"+(d.lastNameCn||d.lastName)+";"+(d.firstNameCn||d.firstName)+";;;",
+    "FN:"+(d.lastNameCn||d.lastName)+(d.firstNameCn||d.firstName),
+    "ORG:"+(d.companyCn||d.companyEn),
+    d.titleCn?"TITLE:"+d.titleCn:"",
+    d.deptCn?"X-DEPARTMENT:"+d.deptCn:"",
+    d.tel?"TEL;TYPE=WORK:"+d.tel:"",
+    d.mobile?"TEL;TYPE=CELL:"+d.mobile:"",
+    d.email?"EMAIL:"+d.email:"",
+    d.website?"URL:https://"+d.website:"",
+    d.addressCn?"ADR;TYPE=WORK:;;"+d.addressCn+";;;;":"",
+    "END:VCARD"
+  ].filter(Boolean).join("\n");
+}
+
 function generateVCard(d) {
-  return qrLang === "en" ? generateVCardEn(d) : generateVCardKr(d);
+  if (qrLang === "en") return generateVCardEn(d);
+  if (qrLang === "cn") return generateVCardCn(d);
+  return generateVCardKr(d);
 }
 
 function downloadVCard() {
@@ -531,16 +717,29 @@ function updateQR() {
   var valid = isValid();
 
   if (!valid) {
-    container.innerHTML = '<div class="qr-empty-state"><div class="icon">📇</div><p>입력 탭에서 명함 정보를<br>먼저 입력해 주세요.</p></div>';
+    container.innerHTML = '<div class="qr-empty-state"><div class="icon">📇</div><p>' + t("emptyStateShort") + '</p></div>';
     return;
   }
 
   var d = getForm();
-  var vcard = qrLang === "en" ? generateVCardEn(d) : generateVCardKr(d);
+  var vcard, nameDisplay, metaDisplay, langLabel;
+  if (qrLang === "en") {
+    vcard = generateVCardEn(d);
+    nameDisplay = (d.firstNameEn||"")+" "+(d.lastNameEn||"");
+    metaDisplay = (d.titleEn||"")+(d.titleEn&&d.deptEn?" · ":"")+(d.deptEn||"");
+    langLabel = t("vcardLabelEn");
+  } else if (qrLang === "cn") {
+    vcard = generateVCardCn(d);
+    nameDisplay = (d.lastNameCn||"")+(d.firstNameCn||"");
+    metaDisplay = (d.deptCn||"")+(d.deptCn&&d.titleCn?" · ":"")+(d.titleCn||"");
+    langLabel = t("vcardLabelCn");
+  } else {
+    vcard = generateVCardKr(d);
+    nameDisplay = d.lastName+d.firstName;
+    metaDisplay = (d.dept||"")+(d.dept&&d.titleKr?" · ":"")+(d.titleKr||"");
+    langLabel = t("vcardLabelKr");
+  }
   var qrUrl = QR_API+"?size=400x400&data="+encodeURIComponent(vcard)+"&color=1a2e78&bgcolor=ffffff&format=svg";
-  var nameDisplay = qrLang === "en" ? ((d.firstNameEn||"")+" "+(d.lastNameEn||"")) : (d.lastName+d.firstName);
-  var metaDisplay = qrLang === "en" ? ((d.titleEn||"")+(d.titleEn&&d.deptEn?" · ":"")+(d.deptEn||"")) : ((d.dept||"")+(d.dept&&d.titleKr?" · ":"")+(d.titleKr||""));
-  var langLabel = qrLang === "en" ? "영문 vCard" : "국문 vCard";
 
   container.innerHTML =
     '<div class="qr-card">' +
@@ -549,8 +748,8 @@ function updateQR() {
       '<p class="qr-meta">'+metaDisplay+'</p>' +
       '<p style="margin-top:8px;font-size:11px;color:var(--navy);font-weight:600;">'+langLabel+'</p>' +
     '</div>' +
-    '<div class="qr-hint">스마트폰 카메라로 QR코드를 스캔하면<br>연락처가 바로 저장됩니다.</div>' +
-    '<button id="btnQrVcard" style="margin-top:16px;padding:10px 20px;background:none;border:1px solid #ccc;border-radius:8px;font-size:12px;color:#888;cursor:pointer;font-family:inherit;">vCard 파일 직접 다운로드</button>';
+    '<div class="qr-hint">' + t("qrHint") + '</div>' +
+    '<button id="btnQrVcard" style="margin-top:16px;padding:10px 20px;background:none;border:1px solid #ccc;border-radius:8px;font-size:12px;color:#888;cursor:pointer;font-family:inherit;">' + t("btnDownloadVcard") + '</button>';
   document.getElementById("btnQrVcard").addEventListener("click", downloadVCard);
 }
 
@@ -558,6 +757,7 @@ function setQrLang(lang) {
   qrLang = lang;
   document.getElementById("qrLangKr").classList.toggle("active", lang==="kr");
   document.getElementById("qrLangEn").classList.toggle("active", lang==="en");
+  document.getElementById("qrLangCn").classList.toggle("active", lang==="cn");
   updateQR();
 }
 
@@ -569,28 +769,63 @@ function updatePreview() {
   if (!valid) return;
 
   const d = getForm();
-  const kr = currentLang === "kr";
+  const lang = currentLang; // "kr" | "en" | "cn"
   const nameEl = document.getElementById("cardName");
-  if (kr) {
-    nameEl.textContent = d.lastName+d.firstName;
-  } else {
-    nameEl.textContent = d.firstNameEn+" "+d.lastNameEn;
-  }
-  nameEl.className = "card-name "+(kr?"kr":"en");
 
-  var deptLine = kr ? (d.dept||"") : (d.deptEn||"");
-  if (kr && d.position && deptLine) deptLine += " ("+d.position+")";
-  var titleLine = kr ? (d.titleKr||"") : (d.titleEn||"");
-  var deptHtml = kr ? (deptLine+"<br>"+titleLine) : (titleLine+"<br>"+deptLine);
+  if (lang === "en") {
+    nameEl.textContent = (d.firstNameEn||"")+" "+(d.lastNameEn||"");
+    nameEl.className = "card-name en";
+  } else if (lang === "cn") {
+    nameEl.textContent = (d.lastNameCn||"")+(d.firstNameCn||"");
+    nameEl.className = "card-name kr";
+  } else {
+    nameEl.textContent = d.lastName+d.firstName;
+    nameEl.className = "card-name kr";
+  }
+
+  var deptLine, titleLine, deptHtml;
+  if (lang === "cn") {
+    deptLine = d.deptCn || "";
+    titleLine = d.titleCn || "";
+    deptHtml = deptLine + "<br>" + titleLine;
+  } else if (lang === "en") {
+    deptLine = d.deptEn || "";
+    titleLine = d.titleEn || "";
+    deptHtml = titleLine + "<br>" + deptLine;
+  } else {
+    deptLine = d.dept || "";
+    titleLine = d.titleKr || "";
+    deptHtml = deptLine + "<br>" + titleLine;
+  }
   deptHtml = deptHtml.replace(/^<br>|<br>$/g,"");
   document.getElementById("cardDept").innerHTML = deptHtml;
-  document.getElementById("cardCompany").textContent = kr?d.companyKr:d.companyEn;
+
+  var companyText = (lang === "en") ? d.companyEn : (lang === "cn" ? d.companyCn : d.companyKr);
+  document.getElementById("cardCompany").textContent = companyText;
+
+  var addrLine, telLabel, mobileLabel, emailLabel;
+  if (lang === "cn") {
+    addrLine = d.addressCn;
+    telLabel = "Tel : ";
+    mobileLabel = "Mobile : ";
+    emailLabel = "E-mail : ";
+  } else if (lang === "en") {
+    addrLine = d.addressEn;
+    telLabel = "Tel : ";
+    mobileLabel = "Mobile : ";
+    emailLabel = "E-mail : ";
+  } else {
+    addrLine = d.addressKr;
+    telLabel = "Tel : ";
+    mobileLabel = "Mobile : ";
+    emailLabel = "E-mail : ";
+  }
 
   const lines = [
-    kr?d.addressKr:d.addressEn,
-    d.tel?"Tel : "+(kr?d.tel:"82-"+d.tel.replace(/^0/,"")):"",
-    d.mobile?"Mobile : "+(kr?d.mobile:"82-"+d.mobile.replace(/^0/,"")):"",
-    d.email?"E-mail : "+d.email:"",
+    addrLine,
+    d.tel ? telLabel + (lang === "kr" ? d.tel : "82-"+d.tel.replace(/^0/,"")) : "",
+    d.mobile ? mobileLabel + (lang === "kr" ? d.mobile : "82-"+d.mobile.replace(/^0/,"")) : "",
+    d.email ? emailLabel + d.email : "",
     d.website
   ].filter(Boolean);
 
@@ -602,6 +837,7 @@ function setLang(lang) {
   currentLang = lang;
   document.getElementById("langKr").classList.toggle("active", lang==="kr");
   document.getElementById("langEn").classList.toggle("active", lang==="en");
+  document.getElementById("langCn").classList.toggle("active", lang==="cn");
   updatePreview();
 }
 
@@ -659,7 +895,7 @@ function loadSample() {
 }
 
 function resetForm() {
-  if (!confirm("입력한 명함 정보가 모두 삭제됩니다. 초기화하시겠습니까?")) return;
+  if (!confirm(t("confirmReset"))) return;
   FIELDS.forEach(k => {
     document.getElementById(k).value = (k==="website")?"www.hyosungtnc.com":"";
   });
@@ -686,7 +922,7 @@ function formatPhone(val) {
 
 document.addEventListener("input", function(e) {
   if (e.target.tagName === "INPUT") {
-    if (e.target.id === "tel" || e.target.id === "mobile") {
+    if ((e.target.id === "tel" || e.target.id === "mobile") && uiLang === "ko") {
       var pos = e.target.selectionStart;
       var oldLen = e.target.value.length;
       e.target.value = formatPhone(e.target.value);
@@ -706,15 +942,24 @@ document.getElementById("btnSample").addEventListener("click", loadSample);
 document.getElementById("btnReset").addEventListener("click", resetForm);
 document.getElementById("langKr").addEventListener("click", function(){ setLang("kr"); });
 document.getElementById("langEn").addEventListener("click", function(){ setLang("en"); });
+document.getElementById("langCn").addEventListener("click", function(){ setLang("cn"); });
 document.getElementById("qrLangKr").addEventListener("click", function(){ setQrLang("kr"); });
 document.getElementById("qrLangEn").addEventListener("click", function(){ setQrLang("en"); });
+document.getElementById("qrLangCn").addEventListener("click", function(){ setQrLang("cn"); });
+
+// UI language toggle (KO/EN/CN)
+document.getElementById("uiLangKo").addEventListener("click", function(){ setUiLang("ko"); });
+document.getElementById("uiLangEn").addEventListener("click", function(){ setUiLang("en"); });
+document.getElementById("uiLangCn").addEventListener("click", function(){ setUiLang("cn"); });
 
 // Collapsible field groups (event delegation)
 document.querySelectorAll(".field-group-header").forEach(function(header) {
   header.addEventListener("click", function() { toggleGroup(header); });
 });
 
-// Init: restore saved data, then update UI
+// Init: apply KO (default), restore saved data, update UI
+document.body.setAttribute("data-ui", "ko");
+applyI18n();
 const hadSaved = loadSavedForm();
 updateAll();
 if (hadSaved && isValid()) switchTab("qr");
